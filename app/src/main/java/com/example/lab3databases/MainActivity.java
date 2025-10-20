@@ -67,14 +67,41 @@ public class MainActivity extends AppCompatActivity {
         findBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "Find product", Toast.LENGTH_SHORT).show();
+                String name = productName.getText().toString().trim();
+                String priceStr = productPrice.getText().toString().trim();
+                Double price = parseDoubleOrNull(priceStr);
+
+                Cursor cursor = (name.isEmpty() && price == null)
+                        ? dbHandler.getData()
+                        : dbHandler.find(name.isEmpty() ? null : name, price);
+
+                productList.clear();
+                if (cursor != null) {
+                    if (cursor.getCount() == 0) {
+                        Toast.makeText(MainActivity.this, "No matches", Toast.LENGTH_SHORT).show();
+                    } else {
+                        while (cursor.moveToNext()) {
+                            productList.add(cursor.getString(1) + " (" + cursor.getString(2) + ")");
+                        }
+                    }
+                    cursor.close();
+                }
+                adapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_list_item_1, productList);
+                productListView.setAdapter(adapter);
             }
         });
 
         deleteBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "Delete product", Toast.LENGTH_SHORT).show();
+                String name = productName.getText().toString().trim();
+                int rows = dbHandler.deleteByName(name);
+                Toast.makeText(MainActivity.this, "Deleted " + rows + " item(s)", Toast.LENGTH_SHORT).show();
+
+                productName.setText("");
+                productPrice.setText("");
+
+                viewProducts();
             }
         });
 
@@ -95,5 +122,15 @@ public class MainActivity extends AppCompatActivity {
 
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, productList);
         productListView.setAdapter(adapter);
+    }
+
+    private Double parseDoubleOrNull(String s) {
+        if (s == null || s.isEmpty()) return null;
+        try {
+            return Double.parseDouble(s);
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Invalid price", Toast.LENGTH_SHORT).show();
+            return null;
+        }
     }
 }

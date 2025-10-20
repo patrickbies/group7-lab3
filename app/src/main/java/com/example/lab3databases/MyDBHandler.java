@@ -51,4 +51,32 @@ public class MyDBHandler extends SQLiteOpenHelper {
         db.insert(TABLE_NAME, null, values);
         db.close();
     }
+
+    public Cursor find(String nameOrNull, Double priceOrNull) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String selection = null;
+        String[] args = null;
+
+        boolean hasName = nameOrNull != null && !nameOrNull.trim().isEmpty();
+        boolean hasPrice = priceOrNull != null;
+
+        if (hasName && hasPrice) {
+            selection = COLUMN_PRODUCT_NAME + " LIKE ? AND " + COLUMN_PRODUCT_PRICE + " = ?";
+            args = new String[]{ nameOrNull + "%", String.valueOf(priceOrNull) };
+        } else if (hasName) {
+            selection = COLUMN_PRODUCT_NAME + " LIKE ?";
+            args = new String[]{ nameOrNull + "%" };
+        } else if (hasPrice) {
+            selection = COLUMN_PRODUCT_PRICE + " = ?";
+            args = new String[]{ String.valueOf(priceOrNull) };
+        }
+
+        return db.query(TABLE_NAME, null, selection, args, null, null, null);
+    }
+
+    public int deleteByName(String name) {
+        if (name == null) return 0;
+        SQLiteDatabase db = this.getWritableDatabase();
+        return db.delete(TABLE_NAME, COLUMN_PRODUCT_NAME + " = ? COLLATE BINARY", new String[]{ name });
+    }
 }
